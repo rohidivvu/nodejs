@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    environment {
+        NODE_HOME = tool name: 'NodeJS', type: 'NodeJSInstallation'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Pull code from Git repository
+                git 'https://github.com/your-username/your-repo.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                // Install npm dependencies
+                sh '${NODE_HOME}/bin/npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                // Run automated tests
+                sh '${NODE_HOME}/bin/npm test'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Deploy to AWS Compute Engine instance
+                sshagent(['your-ssh-credential-id']) {
+                    sh '''
+                    scp -i /path/to/your/private-key -r * ec2-user@your-ec2-instance:/path/to/deploy
+                    ssh -i /path/to/your/private-key ec2-user@your-ec2-instance << 'EOF'
+                    cd /path/to/deploy
+                    npm install
+                    npm start
+                    EOF
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build and deployment successful!'
+        }
+        failure {
+            echo 'Build or deployment failed.'
+        }
+    }
+}
+
